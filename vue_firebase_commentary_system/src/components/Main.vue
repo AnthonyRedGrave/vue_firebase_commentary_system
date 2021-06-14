@@ -1,36 +1,39 @@
 <template>
-  <div class="main_commentary" v-if="fake_comms.length">
+  <div class="main_commentary" v-if="comments.length">
       <input type="text" placeholder="Комментарий" class="form-control commentary_text_input">
-      <div class="commentary" v-for="com in fake_comms" :key="com.text">
+      <div class="commentary" v-for="com in comments" :key="com.id">
         <div class="commentary_el">
           <div class="comment_info">
             <div class="comment_user">
-              {{com.username}}
+              Имя
             </div>
             <div class="comment_text">
-              {{com.text}}
+              {{com.content}}
             </div>
           </div>
           <div class="comment_actions">
-            <input type="submit" value="Ответить" @click="answer_comment" class="btn btn-primary answer_comment_button">
+            <input type="submit" value="Ответить" @click="answer_comment(com.id)" class="btn btn-primary answer_comment_button">
             <input type="submit" value="Удалить" @click="delete_comment" class="btn btn-danger delete_comment_button">
              
           </div>
           
         </div>
-        <textarea placeholder="Комментарий" v-bind:style="{ display: display }" class="form-control answer_comment_input"></textarea>
+        <form class="form" v-bind:name=com.id v-bind:style="{ display: display }" @submit.prevent="createNewAnswer(com.id)">
+          <textarea placeholder="Комментарий" v-bind:id="com.id" class="form-control answer_comment_input"></textarea>
+          <input type="submit" value="Ответить на комментарий" class="btn btn-primary post_answer_comment_button">
+        </form>
         <div class="hr">
           <hr>
         </div>
         
-        <div class="answers" v-for="ans in com.answers" :key="ans.text">
+        <div class="answers" v-for="ans in com.answers" :key="ans.id">
           <answer :answer_data="ans"/>
           
         </div>
       </div>
   </div>
   <div class="main_commentary_none" v-else>
-    Пока нет ни одного комментария, но вы можете добавить новый
+    <h3>Пока нет ни одного комментария, но вы можете добавить новый</h3>
     <input type="text" v-model="text" class="form-control commentary_text_input">
     
   </div>
@@ -38,6 +41,7 @@
 
 <script>
 import Answer from './Answer.vue'
+import axios from 'axios'
 export default {
     name: 'main',
     components:
@@ -49,55 +53,43 @@ export default {
     },
     data(){
       return {
-        text: null,
-        commentary: {},
-        commentaries:[],
+        comments: [],
         display: 'none',
-        fake_comms:[
-          {
-            text: "new comment1",
-            username: "Jake",
-            date_published: "12.10.2021",
-            answers:[
-              {
-                text: "new comment5ans",
-                username: "Marya",
-                date_published: "13.10.2021",
-              },
-              {
-                text: "new comment5anscomment5anscomment5anscomment5anscomment5ans",
-                username: "Marya",
-                date_published: "13.10.2021",
-              }
-            ]
-          },
-          {
-            text: "new comment2",
-            username: "Oleg",
-            date_published: "12.10.2021"
-          },
-          {
-            text: "new comment3",
-            username: "Fire",
-            date_published: "12.10.2021"
-          },
-          {
-            text: "nnew comment4",
-            username: "Jake",
-            date_published: "12.10.2021"
-          },
-        ],
-        username: null
+        comment: {}
       }
+    },
+    mounted(){
+      axios.get('http://localhost:8000/api/comments/list/').then(responce=>(this.comments=responce.data))
     },
     
     methods:{
-      answer_comment(){
-        console.log("ответить на коммент")
-        this.display = 'block'
+      answer_comment(id){
+        const list = document.querySelectorAll('form')
+        for(let i=0;i<list.length;i++){
+          list[i].style.display = 'none'
+        }
+        const create_answer_form = document.getElementsByName(id); // форма с ответом и айди родителя
+        create_answer_form[0].style.display = 'block' // сделать только его видимым
+        
       },
       delete_comment(){
         console.log("delete на коммент")
+      },
+      createNewAnswer(id){
+        let answer_text_value = document.getElementById(id)
+        axios({
+          method: 'post',
+          url: 'http://localhost:8000/api/answers/list/',
+          data: {
+            content: answer_text_value.value,
+            parent: id
+          }
+        }).then((responce)=>{
+          this.comments.push(responce.data)
+          console.log(responce.data)
+          answer_text_value = ''
+        })
+        
       }
     }
     // created(){
@@ -153,5 +145,10 @@ export default {
 .answer_comment_input{
   width: 380px;
   margin-left: 35px;
+}
+
+.post_answer_comment_button{
+  margin-left: 185px;
+  margin-top: 15px;
 }
 </style>
