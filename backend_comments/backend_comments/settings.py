@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'commentaries_api',
-    'corsheaders'
+    'corsheaders',
+    'channels'
 
 ]
 
@@ -76,6 +77,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend_comments.wsgi.application'
+ASGI_APPLICATION = 'backend_comments.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 
 # Database
