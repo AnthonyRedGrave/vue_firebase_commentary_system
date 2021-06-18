@@ -1,5 +1,9 @@
 <template>
   <div class="main_commentary" v-if="comments.length">
+    <div class="userMain">
+      <p>Вы вошли как {{username}}</p>
+      <router-link to="/logout">Logout</router-link>
+    </div>
     <form class="create_new_comment_form" @submit.prevent="createNewAnswer()">
         <textarea placeholder="Комментарий" id="create_new_comment_input" class="form-control create_new_comment_input"></textarea>
         <input type="submit" value="Написать комментарий" class="btn btn-primary create_new_comment_button">
@@ -8,14 +12,14 @@
         <div class="commentary_el">
           <div class="comment_info">
             <div class="comment_user">
-              Имя
+              {{com.user_name}}
             </div>
             <div class="comment_text">
               {{com.content}}
             </div>
           </div>
           <div class="comment_actions">
-            <input type="submit" value="Ответить" @click="answer_comment(com.id)" class="btn btn-primary answer_comment_button">
+            <input type="submit" value="Ответить" @click="answer_comment(com.id, com.user_name)" class="btn btn-primary answer_comment_button">
             <input type="submit" value="Удалить" @click="delete_comment(com.id)" class="btn btn-danger delete_comment_button">
              
           </div>
@@ -39,6 +43,9 @@
   </div>
   <div class="main_commentary_none" v-else>
     <h3>Пока нет ни одного комментария, но вы можете добавить новый</h3>
+    <div class="userMain">
+      <p>Вы вошли как {{username}}</p>
+    </div>
     <form class="create_new_comment_form" @submit.prevent="createNewAnswer()">
         <textarea placeholder="Комментарий" id="create_new_comment_input" class="form-control create_new_comment_input"></textarea>
         <input type="submit" value="Написать комментарий" class="btn btn-primary create_new_comment_button">
@@ -50,6 +57,7 @@
 <script>
 import Answer from './Answer.vue'
 import axios from 'axios'
+import {mapState} from 'vuex'
 export default {
     name: 'main',
     components:
@@ -73,9 +81,8 @@ export default {
         'localhost:8000' +
         '/ws/comments/'
     )
-    this.socket.onopen = function(event){
-      console.log(event)
-      console.log("success connect ")
+    this.socket.onopen = function(){
+
     }
     let _this = this
     this.socket.onmessage = function(event){
@@ -109,16 +116,32 @@ export default {
       this.get_comment_list()
     },
     
+    computed: mapState(['APIData', 'username']),
+    
+    
     methods:{
       get_comment_list(){ // получение данных апи от бэкенда в json
-        axios.get('http://localhost:8000/api/comments/list/').then(responce=>(this.comments=responce.data))
+      console.log(this.$store.state.accessToken)
+        axios.get('http://localhost:8000/api/comments/list/', {headers:{Authorization: `Bearer ${this.$store.state.accessToken}`}})
+        .then(responce=>{
+          console.log("зашел")
+
+          this.$store.state.APIData = responce.data
+          this.comments=responce.data
+          console.log(responce.data)
+          })
+        .catch(err=>{
+          console.log(err)
+        })
       },
-      answer_comment(id){ // функция отвечаюшая за отображение формы ввода ответа пользователя для выбранного комментария
+      answer_comment(id, username_to){ // функция отвечаюшая за отображение формы ввода ответа пользователя для выбранного комментария
         const list = document.querySelectorAll('.form')
         for(let i=0;i<list.length;i++){
           list[i].style.display = 'none'
         }
+        
         const create_answer_form = document.getElementsByName(id); // форма с ответом и айди родителя
+        create_answer_form[0][0].value = username_to + ','
         create_answer_form[0].style.display = 'block' // сделать только его видимым
         
       },
@@ -144,19 +167,23 @@ export default {
         let new_com_answer_id = null
         let new_com_answer_date_published = null
         if (id==null){
+          console.log("создаю новый коммент")
+          console.log(this.username)
           let create_new_comment_text = document.getElementById("create_new_comment_input")
           axios({
             method: 'post',
             url: 'http://localhost:8000/api/answers/list/',
             data: {
               content: create_new_comment_text.value,
-              parent: id
+              parent: id,
+              user_name: this.username,
             }
           }).then((responce)=>{
             new_com_answer_id = responce.data.id
             new_com_answer_date_published = responce.data.date_published
             this.socket.send(JSON.stringify({
               'parent': id,
+              'user_name': this.username,
               'content': create_new_comment_text.value,
               'id': new_com_answer_id,
               'date_published': new_com_answer_date_published,
@@ -172,7 +199,8 @@ export default {
             url: 'http://localhost:8000/api/answers/list/',
             data: {
               content: answer_text_value.value,
-              parent: id
+              parent: id,
+              user_name: this.username,
             }
           }).then((responce)=>{
             new_com_answer_id = responce.data.id
@@ -184,6 +212,7 @@ export default {
             'content': answer_text_value.value,
             'id': new_com_answer_id,
             'date_published': new_com_answer_date_published,
+            'user_name': this.username,
             'to_delete': 'false'
           }))
             answer_text_value.value = ''
@@ -221,7 +250,7 @@ export default {
 }
 .comment_actions{
   position: relative;
-  top: 60px;
+  top: 40px;
   left: 60px;
 }
 .hr{

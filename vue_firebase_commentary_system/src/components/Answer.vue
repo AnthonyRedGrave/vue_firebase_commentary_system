@@ -3,7 +3,7 @@
       <div class="answer_el">
           <div class="answer_info">
             <div class="answer_user">
-              Имя
+              {{answer_data.user_name}}
             </div>
             <div class="answer_text">
               {{answer_data.content}}

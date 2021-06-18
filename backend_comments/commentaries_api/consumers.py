@@ -24,6 +24,7 @@ class CommentConsumer(AsyncWebsocketConsumer):
         content = text_data_json['content']
         parent = text_data_json['parent']
         id = text_data_json['id']
+        user_name = text_data_json['user_name']
         to_delete = text_data_json['to_delete']
         date_published = text_data_json['date_published']
         await self.channel_layer.group_send(
@@ -34,7 +35,8 @@ class CommentConsumer(AsyncWebsocketConsumer):
                 'parent': parent,
                 'id': id,
                 'date_published': date_published,
-                'to_delete': to_delete
+                'to_delete': to_delete,
+                'user_name': user_name
 
             }
         )
@@ -43,6 +45,7 @@ class CommentConsumer(AsyncWebsocketConsumer):
         content = event['content']
         parent = event['parent']
         id = event['id']
+        user_name = event['user_name']
         to_delete = event['to_delete']
         date_published = event['date_published']
         await self.send(text_data=json.dumps({
@@ -50,7 +53,8 @@ class CommentConsumer(AsyncWebsocketConsumer):
             'parent': parent,
             'id': id, 
             'date_published': date_published,
-            'to_delete': to_delete
+            'to_delete': to_delete,
+            'user_name': user_name
         },
         ensure_ascii=False))
     
